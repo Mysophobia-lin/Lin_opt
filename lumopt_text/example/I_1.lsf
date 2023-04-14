@@ -1,0 +1,200 @@
+switchtolayout;
+selectall;
+delete;
+
+## SIM PARAMS
+num_wg_input = 2;
+num_wg_output = 1;
+wg_width = 0.45e-6;
+wg_height = 0.22e-6;
+in_wg_dist = 1e-6;
+out_wg_dist = 1e-6;
+mode_width = 3*wg_width;
+
+in_total_wg_h = num_wg_input*wg_width + (num_wg_input-1)*in_wg_dist;
+out_total_wg_h = num_wg_output*wg_width + (num_wg_output-1)*out_wg_dist;
+
+opt_size_x = 2.5e-6;
+opt_size_y = 3e-6;
+opt_size_z = wg_height;
+
+size_x = opt_size_x+1e-6;
+size_y = opt_size_y+1e-6;
+size_z = 1.2e-6;
+
+### 2D index params ###
+wg_index = 2.81;
+bg_index = 1.44;
+
+### 3D index params ###
+#wg_index = 3.45;
+#bg_index = 1;
+#sio_index = 1.45;
+
+dx = 20e-9;
+
+for( i=1:num_wg_input ){
+	addrect;
+	set('name','input_wg'+num2str(num_wg_input+1-i));
+	set('x min',-size_x);
+	set('x max',-opt_size_x/2+5e-7);
+	set('y',(-in_total_wg_h/2)+(wg_width/2)+(i-1)*(in_wg_dist+wg_width));
+	set('y span',wg_width);
+	set('z',0);
+	set('z span',wg_height);
+	set('index',wg_index);
+}
+
+for( k=1:num_wg_output ){
+	addrect;
+	set('name','output_wg'+num2str(num_wg_output+1-k));
+	set('x min',opt_size_x/2 - 5e-7);
+	set('x max',size_x);
+	set('y',(-out_total_wg_h/2)+(wg_width/2)+(k-1)*(out_wg_dist+wg_width));
+	set('y span',wg_width);
+	set('z',0);
+	set('z span',wg_height);
+	set('index',wg_index);
+}
+
+### substrate ###
+
+#addrect;
+#set('name','SIO2');
+#set('x',0);
+#set('x span',size_x+2e-6);
+#set('y',0);
+#set('y span',size_y+2e-6);
+#set('z max',-wg_height/2);
+#set('z min',-size_z);
+#set('index',sio_index);
+
+#### bias mode input ###
+addmode;
+set('name','source');
+#set('name','bias');
+set('direction','Forward');
+set('injection axis','x-axis');
+set('x',-size_x/2+0.2e-6);
+set('y',(in_total_wg_h/2)-(wg_width/2));
+set('y span',mode_width);
+set('z',0);
+set('z span',size_z);
+set('wavelength span',0);
+set('mode selection','fundamental TE mode');
+set('enabled',1);
+
+### input A mode ###
+#addmode;
+#set('name','source');
+#set('name','input_A');
+#set('direction','Forward');
+#set('injection axis','x-axis');
+#set('x',-size_x/2+0.2e-6);
+#set('y',(-in_total_wg_h/2)+(wg_width/2)+(num_wg_input-1)*(in_wg_dist+wg_width));
+#set('y span',mode_width);
+#set('z',0);
+#set('z span',size_z);
+#set('wavelength span',0);
+#set('mode selection','fundamental TE mode');
+#set('enabled',0);
+
+### input B mode ###
+#addmode;
+#set('name','source');
+#set('name','input_B');
+#set('direction','Forward');
+#set('injection axis','x-axis');
+#set('x',-size_x/2+0.2e-6);
+#set('y',(-in_total_wg_h/2)+(wg_width/2)+(num_wg_input-1-1)*(in_wg_dist+wg_width));
+#set('y span',mode_width);
+#set('z',0);
+#set('z span',size_z);
+#set('wavelength span',0);
+#set('mode selection','fundamental TE mode');
+#set('enabled',0);
+
+addfdtd;
+set('dimension','2D');
+set('index',bg_index);
+#set('background index',bg_index);
+set('mesh accuracy',3);
+set('x min',-size_x/2);
+set('x max',size_x/2);
+set('y min',-size_y/2);
+set('y max',size_y/2);
+set('z',0);
+#set('z span',size_z);
+set('auto shutoff min',1e-6);
+set('simulation time',5000e-15);
+
+addpower;
+set('name','opt_fields');
+set('monitor type','3D');
+set('x',0);
+set('x span',opt_size_x);
+set('y min',-opt_size_y/2);
+set('y max',opt_size_y/2);
+set('z',0);
+set('z span',opt_size_z);
+
+for( k=1:num_wg_output ) { 
+  addpower;
+  set('name','fom_'+num2str(num_wg_output+1-k));
+  set('monitor type','2D X-normal');
+  set('x', size_x/2-0.2e-6);
+  set('y',-out_total_wg_h/2 + (wg_width/2) + (k-1)*(out_wg_dist+wg_width));
+  set('y span',mode_width);
+  set('z min',-size_z/2);
+  set('z max',size_z/2);
+
+  addmesh;
+  set('name','fom_'+num2str(num_wg_output+1-k)+'_mesh');
+  set('override x mesh',true);
+  set('dx',dx);
+  set('override y mesh',false);
+  set('override z mesh',false);
+  set('x', size_x/2-0.2e-6);
+  set('x span',2*dx);
+  set('y',-out_total_wg_h/2 + (wg_width/2) + (k-1)*(out_wg_dist+wg_width));
+  set('y span',mode_width);
+  set('z min',-size_z/2);
+  set('z max',size_z/2);
+}   
+
+## Global index monitor for visualization (export to VTK)
+addindex;
+set('name','global_index');
+set('monitor type','3D');
+set('x min',-size_x/2);
+set('x max',size_x/2);
+set('y min',-size_y/2);
+set('y max',size_y/2);
+
+set('z min',-opt_size_z/2);
+set('z max',opt_size_z/2);
+
+## Optional: Naive design which can be used as initial guess
+addstructuregroup;
+set('x',0);
+set('y',0);
+set('z',0);
+set("name","initial_guess");
+
+for( i=1:num_wg_input ) { 
+	for( k=1:num_wg_output){
+		addwaveguide;
+		set("name","bend"+num2str(num_wg_input+1-i)+num2str(num_wg_output+1-k));
+		set("base width",wg_width);
+		set("base height",wg_height);
+		set("base angle",90);
+		poles = [-opt_size_x/2,(-in_total_wg_h/2)+(wg_width/2)+(i-1)*(in_wg_dist+wg_width);
+				  0,(-in_total_wg_h/2)+(wg_width/2)+(i-1)*(in_wg_dist+wg_width);
+				  0,(-out_total_wg_h/2)+(wg_width/2)+(k-1)*(out_wg_dist+wg_width);
+				  opt_size_x/2,(-out_total_wg_h/2)+(wg_width/2)+(k-1)*(out_wg_dist+wg_width)];
+		set("poles",poles);
+		set("index",wg_index);
+		addtogroup("initial_guess");
+	}
+}
+
